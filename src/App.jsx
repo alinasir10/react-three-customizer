@@ -3,11 +3,9 @@ import Customizer from "./pages/Customizer";
 
 function App() {
   return (
-    // <BrowserRouter>
     <Routes>
       <Route path="/*" element={<Customizer />} />
     </Routes>
-    // </BrowserRouter>
   );
 }
 

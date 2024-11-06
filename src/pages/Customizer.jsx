@@ -1,11 +1,11 @@
 import { Suspense, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, Center } from "@react-three/drei";
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useParams } from "react-router-dom";
 import Shirt from "../components/Shirt";
 import Mug from "../components/Mug";
 import { CameraRig, CameraRigMug } from "../components/CameraRig";
-import { ControlPanel, ControlPanelMug } from "../components/ControlPanel";
+import { ControlPanelMug, ControlPanel } from "../components/ControlPanel";
 import state from "../store";
 
 const CanvasLoader = () => (
@@ -15,9 +15,24 @@ const CanvasLoader = () => (
 );
 
 const Scene = ({ type }) => (
-  <Suspense fallback={null}>
-    <ambientLight intensity={0.5} />
-    <Environment preset="city" />
+  <>
+    <ambientLight intensity={0.4} />
+    <spotLight
+      position={[10, 15, 10]}
+      angle={0.2}
+      penumbra={1}
+      intensity={1}
+      castShadow
+    />
+    <directionalLight
+      position={[-5, 5, 5]}
+      intensity={0.8}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
+      castShadow
+    />
+    <Environment preset="sunset" />
+
     {type === "shirt" ? (
       <CameraRig>
         <Center>
@@ -31,21 +46,77 @@ const Scene = ({ type }) => (
         </Center>
       </CameraRigMug>
     )}
-  </Suspense>
+  </>
+);
+
+const CustomizerScene = () => {
+  const { type } = useParams();
+  const [activeTab, setActiveTab] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleTabChange = (index) => {
+    setActiveTab(index);
+    state.editorTab = ["color", "decals", "saved"][index];
+  };
+
+  return (
+    <>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+          <CanvasLoader />
+        </div>
+      )}
+      <Canvas
+        shadows
+        camera={{ position: [0, 0, 2], fov: 25 }}
+        gl={{
+          preserveDrawingBuffer: true,
+          antialias: true,
+          alpha: true,
+        }}
+        dpr={[1, 2]}
+        className="h-full w-full transition-all ease-in"
+        onCreated={({ gl }) => {
+          gl.physicallyCorrectLights = true;
+          setIsLoading(false);
+        }}
+      >
+        <Scene type={type} />
+      </Canvas>
+      {type === "shirt" ? (
+        <ControlPanel activeTab={activeTab} onTabChange={handleTabChange} />
+      ) : (
+        <ControlPanelMug activeTab={activeTab} onTabChange={handleTabChange} />
+      )}
+    </>
+  );
+};
+
+const Home = () => (
+  <div className="flex flex-col items-center justify-center h-full">
+    <Link
+      to="/customizer/shirt"
+      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mb-4"
+    >
+      Customize Shirt
+    </Link>
+    <Link
+      to="/customizer/mug"
+      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
+    >
+      Customize Mug
+    </Link>
+  </div>
 );
 
 const Customizer = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    // Simulate checking if all resources are loaded
     const checkResourcesLoaded = async () => {
       try {
-        // Add your resource loading checks here
-        // For example, checking if textures are loaded
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Remove this in production
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -55,11 +126,6 @@ const Customizer = () => {
 
     checkResourcesLoaded();
   }, []);
-
-  const handleTabChange = (index) => {
-    setActiveTab(index);
-    state.editorTab = ["color", "decals", "saved"][index];
-  };
 
   if (error) {
     return (
@@ -78,73 +144,8 @@ const Customizer = () => {
       )}
 
       <Routes>
-        <Route
-          path="/customizer/shirt"
-          element={
-            <>
-              <Canvas
-                shadows
-                camera={{ position: [0, 0, 2], fov: 25 }}
-                gl={{
-                  preserveDrawingBuffer: true,
-                  antialias: true,
-                  alpha: true,
-                }}
-                dpr={[1, 2]} // Optimize for different pixel ratios
-                className="h-full w-full transition-all ease-in"
-                onCreated={({ gl }) => {
-                  gl.physicallyCorrectLights = true;
-                }}
-              >
-                <Scene type="shirt" />
-              </Canvas>
-              <ControlPanel activeTab={activeTab} onTabChange={handleTabChange} />
-            </>
-          }
-        />
-        <Route
-          path="/customizer/mug"
-          element={
-            <>
-              <Canvas
-                shadows
-                camera={{ position: [0, 0, 2], fov: 25 }}
-                gl={{
-                  preserveDrawingBuffer: true,
-                  antialias: true,
-                  alpha: true,
-                }}
-                dpr={[1, 2]} // Optimize for different pixel ratios
-                className="h-full w-full transition-all ease-in"
-                onCreated={({ gl }) => {
-                  gl.physicallyCorrectLights = true;
-                }}
-              >
-                <Scene type="mug" />
-              </Canvas>
-              <ControlPanelMug activeTab={activeTab} onTabChange={handleTabChange} />
-            </>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <div className="flex flex-col items-center justify-center h-full">
-              <Link
-                to="/customizer/shirt"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mb-4"
-              >
-                Customize Shirt
-              </Link>
-              <Link
-                to="/customizer/mug"
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-              >
-                Customize Mug
-              </Link>
-            </div>
-          }
-        />
+        <Route path="/" element={<Home />} />
+        <Route path="/customizer/:type" element={<CustomizerScene />} />
       </Routes>
     </div>
   );

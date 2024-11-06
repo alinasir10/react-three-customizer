@@ -3,71 +3,69 @@ import { useGLTF, Decal } from "@react-three/drei";
 import { useSnapshot } from "valtio";
 import state from "../store";
 import { useLoader } from "@react-three/fiber";
-import { TextureLoader } from "three";
+import { TextureLoader, FrontSide } from "three";
+import * as THREE from "three";
 
 const Mug = () => {
   const snap = useSnapshot(state);
-  const { nodes, materials } = useGLTF("./classic_mug.glb");
+  const { nodes } = useGLTF("/classic-mug.glb");
   const mugRef = useRef();
 
-  const frontLogoTexture = snap.frontMugLogoDecal
-    ? useLoader(TextureLoader, snap.frontMugLogoDecal)
-    : null;
-
-  const backLogoTexture = snap.backMugLogoDecal
-    ? useLoader(TextureLoader, snap.backMugLogoDecal)
+  const roughnessMap = useLoader(TextureLoader, "/Roughness.png");
+  const wrapTexture = snap.mugWrapTexture
+    ? useLoader(TextureLoader, snap.mugWrapTexture)
     : null;
 
   useEffect(() => {
-    if (mugRef.current) {
-      mugRef.current.material.color.set(snap.color);
-    }
-  }, [snap.color]);
+    if (wrapTexture) {
+      wrapTexture.wrapS = wrapTexture.wrapT = THREE.RepeatWrapping;
+      wrapTexture.repeat.set(1, 1);
+      wrapTexture.offset.set(0, 0);
 
-  const renderDecal = (
-    isTextureActive,
-    decalTexture,
-    position,
-    rotation,
-    scale
-  ) => {
-    if (!isTextureActive || !decalTexture) return null;
+      if (mugRef.current) {
+        mugRef.current.material.needsUpdate = true;
+      }
+    }
+  }, [wrapTexture]);
+
+  const renderWrapDecal = () => {
+    if (!snap.isMugWrapTextureVisible || !wrapTexture) return null;
 
     return (
       <Decal
-        position={position}
-        rotation={rotation}
-        scale={scale}
-        map={decalTexture}
+        position={snap.mugWrapPosition || [0, 0.15, 0]}
+        rotation={snap.mugWrapRotation || [Math.PI / 2, 0, 0]}
+        scale={snap.mugWrapScale || [0.95, 0.95, 0.95]}
+        map={wrapTexture}
+        transparent={true}
+        depthTest={true}
+        depthWrite={false}
+        polygonOffset={true}
+        polygonOffsetFactor={-10}
+        polygonOffsetUnits={-10}
+        side={FrontSide}
       />
     );
   };
 
   return (
-    <mesh
-      ref={mugRef}
-      castShadow
-      geometry={nodes?.mug?.geometry}
-      material={materials.color}
-      material-roughness={1}
-      dispose={null}
-    >
-      {renderDecal(
-        snap.isFrontMugLogoTexture,
-        frontLogoTexture,
-        snap.frontMugLogoPosition || [0, 0.04, 0.15],
-        snap.frontMugLogoRotation || [0, 0, 0],
-        snap.frontMugLogoScale || 0.15
-      )}
-
-      {renderDecal(
-        snap.isBackMugLogoTexture,
-        backLogoTexture,
-        snap.backMugLogoPosition || [0, 0.04, -0.15],
-        snap.backMugLogoRotation || [0, 0, 0],
-        snap.backMugLogoScale || 0.15
-      )}
-    </mesh>
+    <group scale={[2, 2, 2]}>
+      <mesh
+        ref={mugRef}
+        castShadow
+        geometry={nodes?.Mug?.geometry}
+        dispose={null}
+      >
+        <meshStandardMaterial
+          roughnessMap={roughnessMap}
+          roughness={1}
+          side={FrontSide}
+          transparent={true}
+          color={snap.color}
+        />
+        {renderWrapDecal()}
+      </mesh>
+    </group>
   );
 };
 

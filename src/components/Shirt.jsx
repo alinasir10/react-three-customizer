@@ -8,7 +8,7 @@ import { TextureLoader } from "three";
 const Shirt = () => {
   const snap = useSnapshot(state);
 
-  const { nodes, materials } = useGLTF("./shirt_baked.glb");
+  const { nodes, materials } = useGLTF("/shirt_baked.glb");
 
   const shirtRef = useRef();
 
@@ -31,7 +31,7 @@ const Shirt = () => {
     decalTexture,
     position,
     rotation,
-    scale
+    scale,
   ) => {
     if (!isTextureActive || !decalTexture) return null;
 
@@ -59,7 +59,7 @@ const Shirt = () => {
         frontLogoTexture,
         snap.frontLogoPosition || [0, 0.04, 0.15],
         snap.frontLogoRotation || [0, 0, 0],
-        snap.frontLogoScale || 0.15
+        snap.frontLogoScale || 0.15,
       )}
 
       {renderDecal(
@@ -67,7 +67,7 @@ const Shirt = () => {
         backLogoTexture,
         snap.backLogoPosition || [0, 0.04, -0.15],
         snap.backLogoRotation || [0, 0, 0],
-        snap.backLogoScale || 0.15
+        snap.backLogoScale || 0.15,
       )}
     </mesh>
   );

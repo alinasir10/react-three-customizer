@@ -53,8 +53,8 @@ const CameraRigMug = ({ children }) => {
       <OrbitControls
         enablePan={false}
         enableZoom={false}
-        minPolarAngle={Math.PI / 2}
-        maxPolarAngle={Math.PI / 2}
+        // minPolarAngle={Math.PI / 2}
+        // maxPolarAngle={Math.PI / 2}
         args={[camera, gl.domElement]}
       />
       {children}

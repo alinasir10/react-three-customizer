@@ -7,7 +7,9 @@ import { TextureLoader } from "three";
 
 const Shirt = () => {
   const snap = useSnapshot(state);
-  const { nodes, materials } = useGLTF("./shirt_baked.glb");
+
+  const { nodes, materials } = useGLTF("/shirt_baked.glb");
+
   const shirtRef = useRef();
 
   const frontLogoTexture = snap.frontLogoDecal

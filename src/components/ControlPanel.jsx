@@ -143,7 +143,6 @@ const ControlPanel = ({ onExport }) => {
 
   useEffect(() => {
     return () => {
-      // Cleanup cropped image URL on unmount
       if (croppedImage) {
         URL.revokeObjectURL(croppedImage);
       }
@@ -211,7 +210,6 @@ const ControlPanel = ({ onExport }) => {
       state.isBackLogoTexture = true;
     }
 
-    // Reset states
     setIsModalOpen(false);
     setCropSettings(initialCropSettings);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -359,4 +357,260 @@ const ControlPanel = ({ onExport }) => {
   );
 };
 
-export default ControlPanel;
+const ControlPanelMug = ({ onExport }) => {
+  const initialCropSettings = {
+    image: "",
+    crop: { x: 0, y: 0 },
+    zoom: 1,
+    aspect: 2,
+  };
+  const snap = useSnapshot(state);
+  const fileInputRef = useRef();
+  const [cropSettings, setCropSettings] = useState(initialCropSettings);
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (croppedImage) {
+        URL.revokeObjectURL(croppedImage);
+      }
+    };
+  }, [croppedImage]);
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsLoading(true);
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        setCropSettings((prev) => ({ ...prev, image: reader.result }));
+        state.mugWrapFileName = file.name;
+        setIsModalOpen(true);
+        setIsLoading(false);
+      };
+
+      reader.onerror = () => {
+        console.error("Error reading file");
+        setIsLoading(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("File upload error:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const onCropComplete = useCallback(
+    async (_, croppedAreaPixels) => {
+      if (!cropSettings.image) return;
+
+      try {
+        const cropped = await getCroppedImg(
+          cropSettings.image,
+          croppedAreaPixels,
+        );
+        setCroppedImage(cropped);
+      } catch (error) {
+        console.error("Error cropping image:", error);
+      }
+    },
+    [cropSettings.image],
+  );
+
+  const applyCroppedImage = useCallback(() => {
+    if (!croppedImage) return;
+
+    state.mugWrapTexture = croppedImage;
+    state.isMugWrapTextureVisible = true;
+
+    setIsModalOpen(false);
+    setCropSettings(initialCropSettings);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [croppedImage]);
+
+  return (
+    <div className="fixed right-4 top-4 w-80 bg-white rounded-lg shadow-xl p-4">
+      <h3 className="font-medium mb-4">Mug Customizer</h3>
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        ref={fileInputRef}
+        className="hidden"
+      />
+
+      <Tab.Group>
+        <Tab.List className="flex space-x-2 mb-4">
+          {["Color", "Image"].map((tabName) => (
+            <Tab
+              key={tabName}
+              className={({ selected }) =>
+                `px-4 py-2 rounded-lg flex-1 transition-all duration-200 ${
+                  selected
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-300 text-black hover:bg-gray-400"
+                }`
+              }
+            >
+              {tabName}
+            </Tab>
+          ))}
+        </Tab.List>
+
+        <Tab.Panels>
+          <Tab.Panel>
+            <SketchPicker
+              color={snap.color}
+              onChange={(color) => (state.color = color.hex)}
+              className="w-full"
+            />
+          </Tab.Panel>
+
+          <Tab.Panel>
+            <div className="space-y-4">
+              <div className="bg-gray-100 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Wrap Around Image</h4>
+                <div className="flex flex-col space-y-2">
+                  <button
+                    onClick={handleFileSelect}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {snap.mugWrapFileName || "Upload Image"}
+                  </button>
+
+                  {snap.isMugWrapTextureVisible && (
+                    <button
+                      onClick={() => {
+                        state.isMugWrapTextureVisible = false;
+                        state.mugWrapTexture = null;
+                        state.mugWrapFileName = "";
+                      }}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Remove Image
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {snap.isMugWrapTextureVisible && (
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Image Adjustments</h4>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-sm mb-1">Scale</label>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="2"
+                        step="0.1"
+                        value={snap.mugWrapScale[0]}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          state.mugWrapScale = [value, value * 0.625, 1];
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm mb-1">
+                        Vertical Position
+                      </label>
+                      <input
+                        type="range"
+                        min="-0.2"
+                        max="0.2"
+                        step="0.01"
+                        value={snap.mugWrapPosition[1]}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          state.mugWrapPosition = [0, value, 0];
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Tab.Panel>
+        </Tab.Panels>
+      </Tab.Group>
+
+      <button
+        onClick={onExport}
+        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg w-full flex items-center justify-center space-x-2 mt-4 transition-colors"
+        disabled={isLoading}
+      >
+        <HiDownload className="w-5 h-5" />
+        <span>Export Design</span>
+      </button>
+
+      <Dialog
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <Dialog.Title className="text-lg font-medium flex justify-between items-center">
+              Crop Image
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <HiX className="w-5 h-5" />
+              </button>
+            </Dialog.Title>
+            <div className="relative w-full h-64 mt-4">
+              {cropSettings.image ? (
+                <Cropper
+                  image={cropSettings.image}
+                  crop={cropSettings.crop}
+                  zoom={cropSettings.zoom}
+                  aspect={2}
+                  onCropChange={(crop) =>
+                    setCropSettings((prev) => ({ ...prev, crop }))
+                  }
+                  onZoomChange={(zoom) =>
+                    setCropSettings((prev) => ({ ...prev, zoom }))
+                  }
+                  onCropComplete={onCropComplete}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-red-500">
+                    No image selected for cropping.
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={applyCroppedImage}
+              className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg w-full transition-colors"
+              disabled={!croppedImage}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ControlPanelMug;
+
+export { ControlPanel, ControlPanelMug };

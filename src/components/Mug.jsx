@@ -5,24 +5,22 @@ import state from "../store";
 import { useLoader } from "@react-three/fiber";
 import { TextureLoader } from "three";
 
-const Shirt = () => {
+const Mug = () => {
   const snap = useSnapshot(state);
+  const { nodes, materials } = useGLTF("./classic_mug.glb");
+  const mugRef = useRef();
 
-  const { nodes, materials } = useGLTF("./shirt_baked.glb");
-
-  const shirtRef = useRef();
-
-  const frontLogoTexture = snap.frontLogoDecal
-    ? useLoader(TextureLoader, snap.frontLogoDecal)
+  const frontLogoTexture = snap.frontMugLogoDecal
+    ? useLoader(TextureLoader, snap.frontMugLogoDecal)
     : null;
 
-  const backLogoTexture = snap.backLogoDecal
-    ? useLoader(TextureLoader, snap.backLogoDecal)
+  const backLogoTexture = snap.backMugLogoDecal
+    ? useLoader(TextureLoader, snap.backMugLogoDecal)
     : null;
 
   useEffect(() => {
-    if (shirtRef.current) {
-      shirtRef.current.material.color.set(snap.color);
+    if (mugRef.current) {
+      mugRef.current.material.color.set(snap.color);
     }
   }, [snap.color]);
 
@@ -47,30 +45,30 @@ const Shirt = () => {
 
   return (
     <mesh
-      ref={shirtRef}
+      ref={mugRef}
       castShadow
-      geometry={nodes?.tshirt?.geometry}
+      geometry={nodes?.mug?.geometry}
       material={materials.color}
       material-roughness={1}
       dispose={null}
     >
       {renderDecal(
-        snap.isFrontLogoTexture,
+        snap.isFrontMugLogoTexture,
         frontLogoTexture,
-        snap.frontLogoPosition || [0, 0.04, 0.15],
-        snap.frontLogoRotation || [0, 0, 0],
-        snap.frontLogoScale || 0.15
+        snap.frontMugLogoPosition || [0, 0.04, 0.15],
+        snap.frontMugLogoRotation || [0, 0, 0],
+        snap.frontMugLogoScale || 0.15
       )}
 
       {renderDecal(
-        snap.isBackLogoTexture,
+        snap.isBackMugLogoTexture,
         backLogoTexture,
-        snap.backLogoPosition || [0, 0.04, -0.15],
-        snap.backLogoRotation || [0, 0, 0],
-        snap.backLogoScale || 0.15
+        snap.backMugLogoPosition || [0, 0.04, -0.15],
+        snap.backMugLogoRotation || [0, 0, 0],
+        snap.backMugLogoScale || 0.15
       )}
     </mesh>
   );
 };
 
-export default Shirt;
+export default Mug;

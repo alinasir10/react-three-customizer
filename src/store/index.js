@@ -21,6 +21,23 @@ const state = proxy({
   backFileName: "",
 
   selectedTab: "front",
+
+  // Mug customization state variables
+  isFrontMugLogoTexture: false,
+  isBackMugLogoTexture: false,
+  frontMugLogoDecal: "",
+  backMugLogoDecal: "",
+
+  frontMugLogoPosition: [0, 0.04, 0.15],
+  frontMugLogoRotation: [0, 0, 0],
+  frontMugLogoScale: 0.15,
+
+  backMugLogoPosition: [0, 0.04, -0.15],
+  backMugLogoRotation: [0, 0, 0],
+  backMugLogoScale: 0.15,
+
+  frontMugFileName: "",
+  backMugFileName: "",
 });
 
 export default state;
